@@ -1,6 +1,7 @@
 services:
   nginx:
-    image: nginx:stable-alpine
+    build: .
+    image: ghcr.io/groskopf/onsite-print-web-server:${IMAGE_TAG:?Set IMAGE_TAG in .env}
     ports:
       - "8080:80"
     restart: unless-stopped
