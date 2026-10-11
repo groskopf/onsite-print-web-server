@@ -1,7 +1,17 @@
 services:
   nginx:
-    build: .
+    build:
+      context: .
+      target: nginx
     image: ghcr.io/groskopf/onsite-print-web-server:${IMAGE_TAG:?Set IMAGE_TAG in .env}
     ports:
       - "8080:80"
     restart: unless-stopped
+    command: ["nginx", "-g", "daemon off;"]
+
+  certbot:
+    profiles: ["publishing"]
+    build:
+      context: .
+      target: certbot
+    image: ghcr.io/groskopf/onsite-print-certbot:${IMAGE_TAG:?Set IMAGE_TAG in .env}

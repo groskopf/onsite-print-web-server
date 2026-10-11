@@ -67,10 +67,11 @@ export IMAGE_TAG=ignored-shell-tag
 (cd / && bash "$temp/docker-push.sh") > "$temp/output" 2>&1
 expected="$(printf '%s\n' \
   "login ghcr.io -u test-user --password-stdin|1.0.0|$temp" \
-  "compose build --pull nginx|1.0.0|$temp" \
-  "compose push nginx|1.0.0|$temp")"
+  "compose build --pull nginx certbot|1.0.0|$temp" \
+  "compose push nginx certbot|1.0.0|$temp")"
 [[ "$(cat "$CALLS")" == "$expected" ]]
 grep -q 'Published ghcr.io/groskopf/onsite-print-web-server:1.0.0' "$temp/output"
+grep -q 'Published ghcr.io/groskopf/onsite-print-certbot:1.0.0' "$temp/output"
 ! grep -q test-secret "$temp/output"
 
 unset GHCR_USERNAME
