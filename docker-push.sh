@@ -27,7 +27,10 @@ fi
 export GHCR_USERNAME="${GHCR_USERNAME:-groskopf}"
 
 printf '%s' "$CR_PAT" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
-docker compose build --pull nginx
-docker compose push nginx
+docker compose build --pull nginx certbot
+docker compose push nginx certbot
 
 echo "Published ghcr.io/groskopf/onsite-print-web-server:$IMAGE_TAG"
+echo "Published ghcr.io/groskopf/onsite-print-certbot:$IMAGE_TAG"
+printf 'IMAGE_TAG=%s\n' "$next_tag" > .env
+echo "Next version in .env: $next_tag"

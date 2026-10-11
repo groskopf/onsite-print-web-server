@@ -13,6 +13,36 @@ Start all services from the sibling `onsite-print-server` repo. Its
 `compose.dev.yaml` enables hot reload, and `compose.deploy.yaml` runs published
 images without requiring the sibling repos on the server.
 
+## HTTPS and renewal
+
+The nginx image runs HTTPS by default. `tls/default.conf.template` serves apps
+and API requests on port 443; normal HTTP requests on port 80 return 403.
+HTTP-01 challenges under `/.well-known/acme-challenge/` remain public, and
+`/healthz` is restricted to container loopback. Keep public port 80 open for
+Let's Encrypt renewal. `TLS_DOMAIN` defaults to `event.onsite-print.dk`.
+
+Mount the full certificate volume at `/etc/letsencrypt` read-only in nginx,
+and the shared challenge volume at `/var/www/certbot`. A certificate must
+already exist at `live/<TLS_DOMAIN>/` before HTTPS startup.
+The nginx watcher checks certificate/key contents every 60 seconds, validates
+the config, and gracefully reloads changed certificates. Failures are logged
+and retried while nginx retains its last loaded certificate.
+
+This repo also builds `ghcr.io/groskopf/onsite-print-certbot` from the Dockerfile's
+`certbot` target. Its renewal loop checks immediately and every 12 hours using
+the webroot, logging failures and retrying. It mounts the same certificate and
+challenge volumes writable. Neither container needs the Docker socket.
+
+The top-level deployment wires these images and volumes together. Use its
+`setup-https.sh <email>` for first issuance, then `start-server.sh` and
+`stop-server.sh` without flags. Certificate issuance temporarily stops nginx;
+renewals do not. Back up certificate private keys securely and never delete
+the certificate volume when stopping the deployment.
+
+The local `compose.yaml` explicitly runs nginx in HTTP mode on port 8080,
+using `default.conf`, without certificates or Certbot. Its publishing-only
+Certbot profile is not started during development.
+
 ## Publish a version
 
 Create a GitHub personal access token (classic) with `write:packages` permission
@@ -31,10 +61,16 @@ bash docker-push.sh
 ```
 
 The script logs in to GHCR using standard input, pulls the current
-`nginx:stable-alpine` base image, builds the local Dockerfile, and pushes
-`ghcr.io/groskopf/onsite-print-web-server:1.0.0`. It stops if any step fails.
-Only the tag in `.env` is published; `latest` is not updated unless it is
-the version selected in that file.
+`nginx:stable-alpine` and `certbot/certbot:v5.0.0` base images, builds both targets,
+and pushes `ghcr.io/groskopf/onsite-print-web-server:1.0.0` and
+`ghcr.io/groskopf/onsite-print-certbot:1.0.0`. It stops if any step fails.
+The version advances only after both images are pushed. If a push partially
+succeeds, retrying may replace the same tags.
+Only the current tag in `.env` is published; `latest` is not updated. Tags must
+be `major.minor.patch` without leading zeros. After publishing `1.0.0`, `.env`
+becomes `1.0.1` (not yet published). Failures do not increment the version.
+Commit the updated `.env`; stale versions or interrupted-push retries can
+still replace a registry tag. Do not run concurrent publishes.
 
 ## Run a published version
 
@@ -54,3 +90,12 @@ bash tests/docker-push-test.sh
 ```
 
 These tests use a mocked Docker CLI and do not build or upload images.
+
+```sh
+bash tests/renew-certificates-test.sh # mocked renewal scheduling/failure tests
+bash tests/https-test.sh             # builds nginx image; isolated TLS/reload test
+```
+
+The TLS test uses self-signed certificates, verifies public HTTP rejection and
+ACME access, then replaces the certificate and confirms nginx reloads it.
+It does not request a live certificate or touch deployment volumes.
