@@ -90,6 +90,8 @@ bash tests/docker-push-test.sh
 ```
 
 These tests use a mocked Docker CLI and do not build or upload images.
+GitHub Actions runs them on pushes and pull requests against this repo's own
+publishing script; no credentials or sibling repositories are needed.
 
 ```sh
 bash tests/renew-certificates-test.sh # mocked renewal scheduling/failure tests
