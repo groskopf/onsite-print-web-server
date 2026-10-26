@@ -4,10 +4,17 @@ An nginx-based web-server image published to GitHub Container Registry (GHCR).
 It serves static files from `/usr/share/nginx/html` (currently the nginx welcome
 page) and forwards requests under `/api/` to the FastAPI backend at
 `backend:8000` (see `default.conf`). It routes `/attendee/` to `attendee:80` and
-`/checkin/` to `checkin:80`, preserving paths and supporting Vite hot-reload
+`/checkin/` to `checkin:80`, and `/admin/` to `admin:80`, preserving paths and supporting Vite hot-reload
 WebSockets during development. Bare app paths redirect to a trailing slash.
+The facilitator workspace at `/event/` is also routed to `admin:80`, sharing
+the admin app's build and assets. `/event` redirects to `/event/`.
 Service names are resolved per request, so nginx can start without those
 services; requests to unavailable services return 502.
+
+API requests allow bodies up to 11 MiB in both HTTP and HTTPS configurations,
+leaving multipart overhead for the backend's 10 MiB per-image upload limit.
+The backend validates image contents and enforces the file size limit.
+Rebuild and recreate the web-server after changing these configurations.
 
 Start all services from the sibling `onsite-print-server` repo. Its
 `compose.dev.yaml` enables hot reload, and `compose.deploy.yaml` runs published

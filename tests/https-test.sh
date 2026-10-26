@@ -43,7 +43,7 @@ done
 [[ "$(curl --silent --fail "http://127.0.0.1:$http_port/.well-known/acme-challenge/test")" == challenge-test ]]
 curl --silent --show-error --fail --cacert "$temp/live/localhost/fullchain.pem" \
   "https://localhost:$https_port/" >/dev/null
-for path in / /attendee/ /checkin/ /api/v2/event/ /healthz; do
+for path in / /attendee/ /checkin/ /admin/ /event /event/ /api/v2/event/ /healthz; do
   [[ "$(curl --silent --show-error -o /dev/null -w '%{http_code}' "http://127.0.0.1:$http_port$path")" == 403 ]]
 done
 
