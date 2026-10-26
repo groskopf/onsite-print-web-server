@@ -4,10 +4,20 @@ An nginx-based web-server image published to GitHub Container Registry (GHCR).
 It serves static files from `/usr/share/nginx/html` (currently the nginx welcome
 page) and forwards requests under `/api/` to the FastAPI backend at
 `backend:8000` (see `default.conf`). It routes `/attendee/` to `attendee:80` and
-`/checkin/` to `checkin:80`, preserving paths and supporting Vite hot-reload
+`/checkin/` to `checkin:80`, and `/admin/` to `admin:80`, preserving paths and supporting Vite hot-reload
 WebSockets during development. Bare app paths redirect to a trailing slash.
+The independent facilitator application at `/event/` is routed to `event:80`,
+with assets under `/event/assets/`. `/event` redirects to `/event/`.
+It does not depend on the admin service or its assets. Deploy an updated
+gateway together with the standalone event image when migrating from the
+combined admin/event application.
 Service names are resolved per request, so nginx can start without those
 services; requests to unavailable services return 502.
+
+API requests allow bodies up to 11 MiB in both HTTP and HTTPS configurations,
+leaving multipart overhead for the backend's 10 MiB per-image upload limit.
+The backend validates image contents and enforces the file size limit.
+Rebuild and recreate the web-server after changing these configurations.
 
 Start all services from the sibling `onsite-print-server` repo. Its
 `compose.dev.yaml` enables hot reload, and `compose.deploy.yaml` runs published
@@ -71,6 +81,20 @@ be `major.minor.patch` without leading zeros. After publishing `1.0.0`, `.env`
 becomes `1.0.1` (not yet published). Failures do not increment the version.
 Commit the updated `.env`; stale versions or interrupted-push retries can
 still replace a registry tag. Do not run concurrent publishes.
+
+Alternatively, trigger the **Publish release** GitHub Actions workflow from the
+Actions tab (`workflow_dispatch` only, runs from `main`). It reads the pending
+`IMAGE_TAG` from `.env`, builds and pushes both the `nginx` and `certbot`
+images to GHCR using the built-in `GITHUB_TOKEN`, tags the published commit on
+`main` with that version (no `v` prefix), and commits the incremented `.env`
+back to `main`. This requires one-time setup: personal-account repos can't add
+GitHub Actions to a ruleset's bypass list, so add a `RELEASE_TOKEN` repository
+secret holding a fine-grained personal access token (owned by a repository
+admin, scoped to this repo with Contents: Read and write permission), and add
+the **Repository admin** role to the branch ruleset's bypass list for `main`.
+Pushes authenticated with `RELEASE_TOKEN` are attributed to the token owner's
+admin role and bypass the pull-request requirement. Renew the token before it
+expires.
 
 ## Run a published version
 
