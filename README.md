@@ -6,8 +6,11 @@ page) and forwards requests under `/api/` to the FastAPI backend at
 `backend:8000` (see `default.conf`). It routes `/attendee/` to `attendee:80` and
 `/checkin/` to `checkin:80`, and `/admin/` to `admin:80`, preserving paths and supporting Vite hot-reload
 WebSockets during development. Bare app paths redirect to a trailing slash.
-The facilitator workspace at `/event/` is also routed to `admin:80`, sharing
-the admin app's build and assets. `/event` redirects to `/event/`.
+The independent facilitator application at `/event/` is routed to `event:80`,
+with assets under `/event/assets/`. `/event` redirects to `/event/`.
+It does not depend on the admin service or its assets. Deploy an updated
+gateway together with the standalone event image when migrating from the
+combined admin/event application.
 Service names are resolved per request, so nginx can start without those
 services; requests to unavailable services return 502.
 

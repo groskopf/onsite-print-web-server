@@ -37,6 +37,7 @@ server {
     set $attendee http://attendee:80;
     set $checkin http://checkin:80;
     set $admin http://admin:80;
+    set $event http://event:80;
 
     location = /attendee {
         return 308 /attendee/;
@@ -73,7 +74,7 @@ server {
     }
 
     location /event/ {
-        proxy_pass $admin;
+        proxy_pass $event;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header Upgrade $http_upgrade;
