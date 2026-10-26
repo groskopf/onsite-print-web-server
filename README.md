@@ -82,6 +82,16 @@ becomes `1.0.1` (not yet published). Failures do not increment the version.
 Commit the updated `.env`; stale versions or interrupted-push retries can
 still replace a registry tag. Do not run concurrent publishes.
 
+Alternatively, trigger the **Publish release** GitHub Actions workflow from
+the Actions tab (`workflow_dispatch` only, runs from `main`). It reads the
+pending `IMAGE_TAG` from `.env`, builds and pushes both the `nginx` and
+`certbot` images to GHCR using the built-in `GITHUB_TOKEN`, tags the published
+commit on `main` with that version (no `v` prefix), and commits the
+incremented `.env` back to `main`. This requires a one-time repository
+setting: allow the GitHub Actions bot to bypass `main`'s branch protection for
+direct pushes, since the workflow pushes a tag and a commit straight to `main`
+without a pull request.
+
 ## Run a published version
 
 ```sh
